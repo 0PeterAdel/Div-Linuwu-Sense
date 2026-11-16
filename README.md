@@ -213,6 +213,25 @@ When reading (`cat`) the `per_zone_mode` file, the current color values for each
 
 This indicates the current RGB color for each of the four zones.
 
+#### PHN16-72 Static lighting
+
+PHN16-72 requires a controller poll, activation of all four zones, zone color
+writes, then a Static commit with engine 0. Selecting mode 0 with animated
+engine 3 can leave the keyboard dark even when the colors read back correctly.
+The driver applies this transaction for both per-zone colors and mode 0;
+other models retain their existing protocol.
+
+After rebuilding and loading the updated driver, set solid red at full brightness:
+
+```bash
+echo ff0000,ff0000,ff0000,ff0000,100 | sudo tee /sys/module/linuwu_sense/drivers/platform:acer-wmi/acer-wmi/four_zoned_kb/per_zone_mode
+```
+
+For PHN16-72 Static, `four_zone_mode` reports global RGB as zero because the
+actual colors are held in the zone registers. Read `per_zone_mode` for those
+colors. The transaction follows [ASense's four-zone implementation](https://github.com/fladirm/asense/blob/main/kernel/asense_rgb.c)
+and was physically verified on PHN16-72 with BIOS V1.16.
+
 ### **Four-Zone Mode (`four_zone_mode`) ✨**
 
 The `four_zone_mode` controls advanced RGB effects for your keyboard, requiring seven parameters:
@@ -251,19 +270,27 @@ The `four_zone_mode` controls advanced RGB effects for your keyboard, requiring 
     - `0`: Blue (black for Neon)
  
 The thermal and fan profiles will be saved and loaded on each reboot, ensuring that the settings remain persistent across restarts.
+
+### Back Logo / Lightbar (PHN16-72)
+
+Supported PHN16-72 systems expose the rear logo/lightbar control at:
+
+`/sys/module/linuwu_sense/drivers/platform:acer-wmi/acer-wmi/back_logo/color`
+
+The value format is `RRGGBB,brightness,enable`, where brightness is `0-100`
+and enable is `0` or `1`. If enable is omitted, a non-zero brightness enables
+the lightbar.
+
+Set the color to cyan at full brightness:
+
+`echo 00ffcc,100,1 | sudo tee /sys/module/linuwu_sense/drivers/platform:acer-wmi/acer-wmi/back_logo/color`
+
+Read the current state:
+
+`cat /sys/module/linuwu_sense/drivers/platform:acer-wmi/acer-wmi/back_logo/color`
+
 ## GUI:
 - [Div Acer Manager Max By PXDiv](https://github.com/PXDiv/Div-Acer-Manager-Max)
-- [GUI LinuwuSense By KumarVivek](https://github.com/kumarvivek1752/Linuwu-Sense-GUI/tree/main)
-
-## 🚧 Roadmap:
-- [x] GUI for keyboard rgb controls to make it noob friendly.
-- [x] Module Persistence After Reboot.
-- [ ] Custom Boot Logo Feature Support.
-- [ ] More device support currently only ( PHN16-71 ) is fully supported.
 
 ## License
 GNU General Public License v3
-
-### 💖 Donations
-Donations are completely optional but show your love for open-source development and motivate me to add more features to this project!
-USDT (BEP20 - BNB Smart Chain): 0xDA7aa42B9Fc3041F20f4Ec828A70E9bDD54A6822
